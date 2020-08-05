@@ -33,8 +33,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.*;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -94,6 +93,7 @@ public class ElasticsearchRestTemplate extends AbstractElasticsearchTemplate {
 
 	private RestHighLevelClient client;
 	private ElasticsearchExceptionTranslator exceptionTranslator;
+	private boolean singleIndexBulk;
 
 	// region Initialization
 	public ElasticsearchRestTemplate(RestHighLevelClient client) {
@@ -102,6 +102,7 @@ public class ElasticsearchRestTemplate extends AbstractElasticsearchTemplate {
 
 		this.client = client;
 		this.exceptionTranslator = new ElasticsearchExceptionTranslator();
+		singleIndexBulk = client instanceof ESRestHighLevelRestClient;
 
 		initialize(createElasticsearchConverter());
 	}
@@ -112,6 +113,7 @@ public class ElasticsearchRestTemplate extends AbstractElasticsearchTemplate {
 
 		this.client = client;
 		this.exceptionTranslator = new ElasticsearchExceptionTranslator();
+		singleIndexBulk = client instanceof ESRestHighLevelRestClient;
 
 		initialize(elasticsearchConverter);
 	}
@@ -235,13 +237,26 @@ public class ElasticsearchRestTemplate extends AbstractElasticsearchTemplate {
 		return new UpdateResponse(result);
 	}
 
-	private List<String> doBulkOperation(List<?> queries, BulkOptions bulkOptions, IndexCoordinates index) {
+	private List<String> doBulkOperationOnSingleIndex(List<?> queries, BulkOptions bulkOptions, IndexCoordinates index) {
 		maybeCallbackBeforeConvertWithQueries(queries, index);
 		BulkRequest bulkRequest = requestFactory.bulkRequest(queries, bulkOptions, index);
 		List<String> ids = checkForBulkOperationFailure(
-				execute(client -> client.bulk(bulkRequest, RequestOptions.DEFAULT)));
+				execute(client -> ((ESRestHighLevelRestClient) client).bulkOnSingleIndex(bulkRequest, RequestOptions.DEFAULT)));
 		maybeCallbackAfterSaveWithQueries(queries, index);
 		return ids;
+	}
+
+	private List<String> doBulkOperation(List<?> queries, BulkOptions bulkOptions, IndexCoordinates index) {
+		if (singleIndexBulk) {
+			return doBulkOperationOnSingleIndex(queries, bulkOptions, index);
+		} else {
+			maybeCallbackBeforeConvertWithQueries(queries, index);
+			BulkRequest bulkRequest = requestFactory.bulkRequest(queries, bulkOptions, index);
+			List<String> ids = checkForBulkOperationFailure(
+					execute(client -> client.bulk(bulkRequest, RequestOptions.DEFAULT)));
+			maybeCallbackAfterSaveWithQueries(queries, index);
+			return ids;
+		}
 	}
 	// endregion
 
@@ -269,6 +284,15 @@ public class ElasticsearchRestTemplate extends AbstractElasticsearchTemplate {
 		SearchResponse response = execute(client -> client.search(searchRequest, RequestOptions.DEFAULT));
 
 		SearchDocumentResponseCallback<SearchHits<T>> callback = new ReadSearchDocumentResponseCallback<>(clazz, index);
+		return callback.doWith(SearchDocumentResponse.from(response));
+	}
+
+	public <T> SearchHits<T> searchAfter(Object[] sortValues, Query query, Class<T> clazz) {
+		SearchRequest searchRequest = requestFactory.searchRequest(query, clazz, getIndexCoordinatesFor(clazz));
+		searchRequest.source().searchAfter(sortValues);
+		SearchResponse response = execute(client -> client.search(searchRequest, RequestOptions.DEFAULT));
+
+		SearchDocumentResponseCallback<SearchHits<T>> callback = new ReadSearchDocumentResponseCallback<>(clazz,  getIndexCoordinatesFor(clazz));
 		return callback.doWith(SearchDocumentResponse.from(response));
 	}
 

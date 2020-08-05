@@ -41,6 +41,7 @@ import org.apache.http.protocol.HttpContext;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.springframework.data.elasticsearch.core.ESRestHighLevelRestClient;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
@@ -122,7 +123,7 @@ public final class RestClients {
 			return clientBuilder;
 		});
 
-		RestHighLevelClient client = new RestHighLevelClient(builder);
+		ESRestHighLevelRestClient client = new ESRestHighLevelRestClient(builder);
 		return () -> client;
 	}
 

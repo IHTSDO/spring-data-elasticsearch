@@ -126,7 +126,7 @@ class RequestFactory {
 	}
 
 	public BulkRequest bulkRequest(List<?> queries, BulkOptions bulkOptions, IndexCoordinates index) {
-		BulkRequest bulkRequest = new BulkRequest();
+		BulkRequest bulkRequest = new BulkRequest(index.getIndexName());
 
 		if (bulkOptions.getTimeout() != null) {
 			bulkRequest.timeout(bulkOptions.getTimeout());

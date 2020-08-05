@@ -22,7 +22,9 @@ import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ByteArrayEntity;
@@ -135,7 +137,10 @@ public class RequestConverters {
 
 	public static Request bulk(BulkRequest bulkRequest) throws IOException {
 		Request request = new Request(HttpMethod.POST.name(), "/_bulk");
-
+		Set<String> indices = bulkRequest.requests().stream().map(DocWriteRequest::index).collect(Collectors.toSet());
+		if (indices.size() == 1) {
+			request = new Request(HttpMethod.POST.name(), "/" + indices.iterator().next() + "/_bulk");
+		}
 		Params parameters = new Params(request);
 		parameters.withTimeout(bulkRequest.timeout());
 		parameters.withRefreshPolicy(bulkRequest.getRefreshPolicy());
