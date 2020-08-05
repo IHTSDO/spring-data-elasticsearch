@@ -138,8 +138,10 @@ public class RequestConverters {
 	public static Request bulk(BulkRequest bulkRequest) throws IOException {
 		Request request = new Request(HttpMethod.POST.name(), "/_bulk");
 		Set<String> indices = bulkRequest.requests().stream().map(DocWriteRequest::index).collect(Collectors.toSet());
+		boolean allowExplicitIndex = true;
 		if (indices.size() == 1) {
 			request = new Request(HttpMethod.POST.name(), "/" + indices.iterator().next() + "/_bulk");
+			allowExplicitIndex = false;
 		}
 		Params parameters = new Params(request);
 		parameters.withTimeout(bulkRequest.timeout());
@@ -185,7 +187,7 @@ public class RequestConverters {
 				metadata.startObject();
 				{
 					metadata.startObject(opType.getLowercase());
-					if (Strings.hasLength(action.index())) {
+					if (allowExplicitIndex && Strings.hasLength(action.index())) {
 						metadata.field("_index", action.index());
 					}
 					if (Strings.hasLength(action.type())) {
