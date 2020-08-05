@@ -102,7 +102,7 @@ public class ElasticsearchRestTemplate extends AbstractElasticsearchTemplate {
 
 		this.client = client;
 		this.exceptionTranslator = new ElasticsearchExceptionTranslator();
-		singleIndexBulk = client instanceof ESRestHighLevelRestClient;
+		singleIndexBulk = client instanceof ESRestHighLevelClient;
 
 		initialize(createElasticsearchConverter());
 	}
@@ -113,7 +113,7 @@ public class ElasticsearchRestTemplate extends AbstractElasticsearchTemplate {
 
 		this.client = client;
 		this.exceptionTranslator = new ElasticsearchExceptionTranslator();
-		singleIndexBulk = client instanceof ESRestHighLevelRestClient;
+		singleIndexBulk = client instanceof ESRestHighLevelClient;
 
 		initialize(elasticsearchConverter);
 	}
@@ -241,7 +241,7 @@ public class ElasticsearchRestTemplate extends AbstractElasticsearchTemplate {
 		maybeCallbackBeforeConvertWithQueries(queries, index);
 		BulkRequest bulkRequest = requestFactory.bulkRequest(queries, bulkOptions, index);
 		List<String> ids = checkForBulkOperationFailure(
-				execute(client -> ((ESRestHighLevelRestClient) client).bulkOnSingleIndex(bulkRequest, RequestOptions.DEFAULT)));
+				execute(client -> ((ESRestHighLevelClient) client).bulkOnSingleIndex(bulkRequest, RequestOptions.DEFAULT)));
 		maybeCallbackAfterSaveWithQueries(queries, index);
 		return ids;
 	}

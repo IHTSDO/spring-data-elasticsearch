@@ -8,9 +8,9 @@ import org.springframework.data.elasticsearch.client.util.RequestConverters;
 import java.io.IOException;
 import java.util.Collections;
 
-public class ESRestHighLevelRestClient extends RestHighLevelClient {
+public class ESRestHighLevelClient extends RestHighLevelClient {
 
-	public ESRestHighLevelRestClient(RestClientBuilder restClientBuilder) {
+	public ESRestHighLevelClient(RestClientBuilder restClientBuilder) {
 		super(restClientBuilder, Collections.emptyList());
 	}
 
