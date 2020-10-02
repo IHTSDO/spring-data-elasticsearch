@@ -41,6 +41,7 @@ import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 import org.elasticsearch.search.suggest.SuggestBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.core.convert.ElasticsearchConverter;
 import org.springframework.data.elasticsearch.core.document.DocumentAdapters;
 import org.springframework.data.elasticsearch.core.document.SearchDocumentResponse;
@@ -281,18 +282,13 @@ public class ElasticsearchRestTemplate extends AbstractElasticsearchTemplate {
 	@Override
 	public <T> SearchHits<T> search(Query query, Class<T> clazz, IndexCoordinates index) {
 		SearchRequest searchRequest = requestFactory.searchRequest(query, clazz, index);
+		Pageable pageable = query.getPageable();
+		if (pageable != null && pageable instanceof SearchAfterPageRequest) {
+			searchRequest.source().searchAfter(((SearchAfterPageRequest) pageable).getSearchAfter());
+		}
 		SearchResponse response = execute(client -> client.search(searchRequest, RequestOptions.DEFAULT));
 
 		SearchDocumentResponseCallback<SearchHits<T>> callback = new ReadSearchDocumentResponseCallback<>(clazz, index);
-		return callback.doWith(SearchDocumentResponse.from(response));
-	}
-
-	public <T> SearchHits<T> searchAfter(Object[] sortValues, Query query, Class<T> clazz) {
-		SearchRequest searchRequest = requestFactory.searchRequest(query, clazz, getIndexCoordinatesFor(clazz));
-		searchRequest.source().searchAfter(sortValues);
-		SearchResponse response = execute(client -> client.search(searchRequest, RequestOptions.DEFAULT));
-
-		SearchDocumentResponseCallback<SearchHits<T>> callback = new ReadSearchDocumentResponseCallback<>(clazz,  getIndexCoordinatesFor(clazz));
 		return callback.doWith(SearchDocumentResponse.from(response));
 	}
 

@@ -7,7 +7,7 @@
 	<!-- Fork of Spring Data Elasticsearch project to add up to date REST client support -->
 	<groupId>org.snomed.otf</groupId>
 	<artifactId>spring-data-elasticsearch</artifactId>
-	<version>4.0.3</version>
+	<version>4.0.4</version>
 	<parent>
 		<groupId>org.springframework.data.build</groupId>
 		<artifactId>spring-data-parent</artifactId>
